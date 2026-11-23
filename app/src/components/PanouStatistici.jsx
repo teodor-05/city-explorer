@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react';
 
 export default function PanouStatistici() {
-  const [destinatii, setDestinatii] = useState([]);
+  const [statistici, setStatistici] = useState({ destinatii: 0, zile: 0, medie: 0 });
   const [incarcare, setIncarcare] = useState(true);
   const [eroare, setEroare] = useState(null);
   const [prag, setPrag] = useState('3');
 
   useEffect(() => {
     async function incarca() {
+      setIncarcare(true);
+      setEroare(null);
       try {
-        const response = await fetch('http://localhost:3001/destinatii');
+        // Noul link către backend-ul tău de pe portul 3000
+        const response = await fetch(`http://localhost:3000/api/statistici?prag=${prag}`);
         if (!response.ok) {
           throw new Error(`Serverul a răspuns cu ${response.status}`);
         }
         const date = await response.json();
-        setDestinatii(date);
+        // Serverul ne trimite direct obiectul { destinatii, zile, medie }
+        setStatistici(date);
       } catch (err) {
         setEroare(err.message);
       } finally {
@@ -22,7 +26,7 @@ export default function PanouStatistici() {
       }
     }
     incarca();
-  }, []);
+  }, [prag]); // Adăugăm prag aici pentru ca datele să se reîncarce când schimbi numărul
 
   if (incarcare) {
     return <p className="stare">Se încarcă statisticile...</p>;
@@ -30,10 +34,6 @@ export default function PanouStatistici() {
   if (eroare) {
     return <p className="stare eroare">Statistici indisponibile: {eroare}</p>;
   }
-
-  const filtrate = destinatii.filter((d) => d.zile >= Number(prag));
-  const totalZile = filtrate.reduce((suma, d) => suma + d.zile, 0);
-  const medie = filtrate.length === 0 ? 0 : totalZile / filtrate.length;
 
   return (
     <section className="panou">
@@ -48,15 +48,15 @@ export default function PanouStatistici() {
         zile
       </label>
 
-      {filtrate.length === 0 && (
+      {statistici.destinatii === 0 && (
         <p className="gol">Nicio destinație cu cel puțin {prag} zile.</p>
       )}
 
-      {filtrate.length > 0 && (
+      {statistici.destinatii > 0 && (
         <ul>
-          <li>Destinații: {filtrate.length}</li>
-          <li>Total zile: {totalZile}</li>
-          <li>Media: {medie.toFixed(1)} zile</li>
+          <li>Destinații: {statistici.destinatii}</li>
+          <li>Total zile: {statistici.zile}</li>
+          <li>Media: {statistici.medie} zile</li>
         </ul>
       )}
     </section>
